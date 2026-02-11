@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Policy Structuring Tool</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-dark: #1a1a2e;
+  --bg-dark-secondary: #16213e;
+  --bg-surface: #ffffff;
+  --bg-page: #f0f2f5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a7a;
+  --text-light: #ffffff;
+  --accent-blue: #4361ee;
+  --accent-blue-hover: #3a56d4;
+  --critical-red: #dc2626;
+  --critical-red-bg: #fef2f2;
+  --critical-red-border: #fecaca;
+  --standard-green: #16a34a;
+  --standard-green-bg: #f0fdf4;
+  --standard-green-border: #bbf7d0;
+  --others-gray: #6b7280;
+  --others-gray-bg: #f9fafb;
+  --others-gray-border: #e5e7eb;
+  --border-light: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-secondary) 100%);
+  color: var(--text-light);
+  padding: 20px 32px;
+  box-shadow: var(--shadow-lg);
+}
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.header p { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+
+.main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+/* Input Section */
+.input-section {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 24px;
+}
+.input-section label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+.policy-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 14px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  color: var(--text-primary);
+}
+.policy-textarea:focus { border-color: var(--accent-blue); }
+.policy-textarea::placeholder { color: #94a3b8; }
+
+.btn-row { display: flex; gap: 12px; margin-top: 16px; align-items: center; }
+
+.btn-process {
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  padding: 10px 28px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-process:hover { background: var(--accent-blue-hover); }
+.btn-process:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-clear {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-light);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-clear:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+.spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error */
+.error-box {
+  background: var(--critical-red-bg);
+  border: 1px solid var(--critical-red-border);
+  color: var(--critical-red);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+.error-box.visible { display: block; }
+
+/* Stats Bar */
+.stats-bar {
+  display: none;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 24px;
+}
+.stats-bar.visible { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+.stat-item { text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; }
+.stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-critical .stat-value { color: var(--critical-red); }
+.stat-standard .stat-value { color: var(--standard-green); }
+
+/* Output Grid */
+.output-section { display: none; }
+.output-section.visible { display: block; }
+
+.output-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 1000px) { .output-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.panel-header-blue { background: #eef2ff; color: #4338ca; }
+.panel-header-green { background: #f0fdf4; color: #15803d; }
+.panel-body { padding: 20px; }
+
+/* Raw Data */
+.raw-data-value {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 600px;
+  overflow-y: auto;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+/* Policy Cards */
+.sensitivity-group { margin-bottom: 20px; }
+.sensitivity-group:last-child { margin-bottom: 0; }
+.sensitivity-group-header {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 0;
+  margin-bottom: 8px;
+}
+.sensitivity-group-header.critical { color: var(--critical-red); border-bottom: 2px solid var(--critical-red); }
+.sensitivity-group-header.standard { color: var(--standard-green); border-bottom: 2px solid var(--standard-green); }
+
+.policy-card {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  border-left: 3px solid;
+}
+.critical-card {
+  background: var(--critical-red-bg);
+  border-left-color: var(--critical-red);
+}
+.standard-card {
+  background: var(--standard-green-bg);
+  border-left-color: var(--standard-green);
+}
+.policy-card-text { font-size: 13px; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
+.policy-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.badge-critical { background: var(--critical-red); color: white; }
+.badge-standard { background: var(--standard-green); color: white; }
+.badge-category { background: #e2e8f0; color: var(--text-primary); font-weight: 600; }
+
+.confidence-bar-container { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.confidence-bar {
+  width: 60px; height: 6px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+.confidence-bar-fill.high { background: #22c55e; }
+.confidence-bar-fill.medium { background: #f59e0b; }
+.confidence-bar-fill.low { background: #ef4444; }
+.confidence-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); min-width: 30px; }
+
+/* User Preview */
+.preview-critical-box {
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.preview-critical-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c2410c;
+  margin-bottom: 12px;
+}
+.preview-critical-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: #7c2d12;
+  line-height: 1.5;
+}
+.preview-critical-item .icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+.preview-standard-section {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.preview-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: background 0.2s;
+  user-select: none;
+}
+.preview-category-header:hover { background: #f1f5f9; }
+.preview-category-header .chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: var(--text-secondary);
+}
+.preview-category-header.expanded .chevron { transform: rotate(180deg); }
+
+.preview-category-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.preview-category-body.expanded { max-height: 500px; }
+
+.preview-standard-item {
+  padding: 6px 14px 6px 32px;
+  font-size: 13px;
+  line-height: 1.5;
+  position: relative;
+  color: var(--text-primary);
+}
+.preview-standard-item::before {
+  content: '•';
+  position: absolute;
+  left: 18px;
+  color: var(--text-secondary);
+}
+.preview-standard-item:last-child { padding-bottom: 12px; }
+.preview-standard-item:first-child { padding-top: 10px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1>Hotel Policy Structuring Tool</h1>
+      <p>Paste raw supplier policy data → Get structured, classified output (Powered by Claude)</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <label style="font-size:12px;color:#94a3b8;white-space:nowrap;">Anthropic API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..."
+        style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:7px 12px;border-radius:6px;font-size:13px;width:260px;outline:none;"
+        oninput="saveApiKey(this.value)">
+      <div id="apiKeyDot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Input -->
+  <div class="input-section">
+    <label for="policyText">Paste raw policy text</label>
+    <textarea class="policy-textarea" id="policyText" placeholder="Paste the entire policy text here — any supplier, any format, any number of policies. Separate multiple policy sections with line breaks.
+
+Example:
+Guest Profile
+Unmarried couples NOT allowed.
+Guests below 18 years of age are not allowed at the property.
+
+Check-in Check-out Policy
+Standard check-in time is 14:00 PM and check-out time is 12:00 PM.
+Passport, Driving License, Aadhar and Govt. ID are accepted as ID proof(s)."></textarea>
+    <div class="btn-row">
+      <button class="btn-process" id="btnProcess" onclick="processPolicy()">
+        <span id="btnProcessText">Process Policy</span>
+        <div class="spinner" id="btnSpinner"></div>
+      </button>
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="error-box" id="errorBox"><span id="errorMessage"></span></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <div class="stat-value" id="statTotal">-</div>
+      <div class="stat-label">Total Atoms</div>
+    </div>
+    <div class="stat-item stat-critical">
+      <div class="stat-value" id="statCritical">-</div>
+      <div class="stat-label">Critical</div>
+    </div>
+    <div class="stat-item stat-standard">
+      <div class="stat-value" id="statStandard">-</div>
+      <div class="stat-label">Standard</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statConfidence">-</div>
+      <div class="stat-label">Avg Confidence</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statTime">-</div>
+      <div class="stat-label">Time</div>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-section" id="outputSection">
+    <div class="output-grid">
+      <!-- Panel A: Raw Input -->
+      <div class="panel">
+        <div class="panel-header panel-header-blue">Input — Raw Policy Text</div>
+        <div class="panel-body" id="rawDataPanel"></div>
+      </div>
+      <!-- Panel B: Structured Output + User Preview -->
+      <div class="panel">
+        <div class="panel-header panel-header-green">Output — Structured Policies</div>
+        <div class="panel-body">
+          <div id="previewPanel"></div>
+          <hr style="border:none;border-top:1px solid var(--border-light);margin:24px 0;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:12px;">Detailed Breakdown</div>
+          <div id="extractedPanel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORY_CONFIG = {
+  // Critical
+  couple_restriction:      { label: 'Couple Restriction',      emoji: '👫', previewLabel: '👫 Couple & Bachelor Rules' },
+  local_id_restriction:    { label: 'Local ID Restriction',    emoji: '🪪', previewLabel: '🪪 Local ID Restrictions' },
+  mandatory_charges:       { label: 'Mandatory Charges',       emoji: '💰', previewLabel: '💰 Mandatory Charges' },
+  age_restriction:         { label: 'Age Restriction',         emoji: '🎂', previewLabel: '🎂 Age Requirements' },
+  nationality_restriction: { label: 'Nationality Restriction', emoji: '🌍', previewLabel: '🌍 Nationality Requirements' },
+  facility_closure:        { label: 'Facility Closure',        emoji: '🚧', previewLabel: '🚧 Facility Closures' },
+  // Standard
+  guest_profile:           { label: 'Guest Profile',           emoji: '👤', previewLabel: '👤 Guest Profile' },
+  id_documentation:        { label: 'ID & Documentation',      emoji: '🪪', previewLabel: '🪪 ID & Documentation' },
+  checkin_checkout:        { label: 'Check-in/out',            emoji: '🕐', previewLabel: '🕐 Check-in & Check-out' },
+  pet_policy:              { label: 'Pet Policy',              emoji: '🐾', previewLabel: '🐾 Pet Policy' },
+  food_beverage:           { label: 'Food & Beverage',         emoji: '🍽️', previewLabel: '🍽️ Food & Beverages' },
+  smoking_policy:          { label: 'Smoking Policy',          emoji: '🚬', previewLabel: '🚬 Smoking Policy' },
+  child_policy:            { label: 'Children Policy',         emoji: '👶', previewLabel: '👶 Children Stay Policy' },
+  extra_bed:               { label: 'Extra Bed',               emoji: '🛏️', previewLabel: '🛏️ Extra Bed Policy' },
+  payment_methods:         { label: 'Payment Methods',         emoji: '💳', previewLabel: '💳 Payment Methods' },
+  security_deposit:        { label: 'Security Deposit',        emoji: '🔒', previewLabel: '🔒 Security Deposit' },
+  accessibility:           { label: 'Accessibility',           emoji: '♿', previewLabel: '♿ Accessibility' },
+  safety_information:      { label: 'Safety Info',             emoji: '🛡️', previewLabel: '🛡️ Safety Information' },
+  cancellation_refund:     { label: 'Cancellation/Refund',     emoji: '❌', previewLabel: '❌ Cancellation & Refund' },
+  outside_visitors:        { label: 'Outside Visitors',        emoji: '🚪', previewLabel: '🚪 Outside Visitors' },
+  damage_policy:           { label: 'Damage Policy',           emoji: '⚠️', previewLabel: '⚠️ Damage Policy' },
+  long_stay:               { label: 'Long Stay',               emoji: '📅', previewLabel: '📅 Long Stay (30+ Nights)' },
+  party_event_policy:      { label: 'Party & Events',          emoji: '🎉', previewLabel: '🎉 Party & Events' },
+  property_rules:          { label: 'Property Rules',          emoji: 'ℹ️', previewLabel: 'ℹ️ Property Rules' },
+  others:                  { label: 'Others',                  emoji: '📋', previewLabel: '📋 Other Policies' },
+};
+
+// API Key persistence
+function saveApiKey(val) {
+  if (val.trim()) {
+    localStorage.setItem('anthropic_api_key', val.trim());
+    document.getElementById('apiKeyDot').style.background = '#22c55e';
+  } else {
+    localStorage.removeItem('anthropic_api_key');
+    document.getElementById('apiKeyDot').style.background = '#ef4444';
+  }
+}
+(function loadApiKey() {
+  const saved = localStorage.getItem('anthropic_api_key');
+  if (saved) {
+    document.getElementById('apiKey').value = saved;
+    document.getElementById('apiKeyDot').style.background = '#22c55e';
+  }
+})();
+
+async function processPolicy() {
+  const policyText = document.getElementById('policyText').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  hideError();
+  if (!apiKey) { showError('Please enter your Anthropic API key in the top-right corner.'); return; }
+  if (!policyText) { showError('Please paste some policy text to process.'); return; }
+
+  setLoading(true);
+  hideOutput();
+  const startTime = performance.now();
+
+  try {
+    const payload = JSON.stringify({ policy_text: policyText, api_key: apiKey });
+    console.log('[DEBUG] Sending', payload.length, 'bytes');
+    const response = await fetch('/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const policies = data.policies || [];
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    renderOutput(policyText, policies, elapsed);
+
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      showError('Cannot connect to server. Make sure the Python server is running: python3 policy_server.py');
+    } else {
+      showError(err.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderOutput(policyText, policies, elapsed) {
+  const criticalOrder = [
+    'couple_restriction', 'local_id_restriction', 'mandatory_charges',
+    'age_restriction', 'nationality_restriction', 'facility_closure'
+  ];
+
+  const criticals = policies.filter(p => p.sensitivity === 'critical').sort((a, b) => {
+    const ai = criticalOrder.indexOf(a.category);
+    const bi = criticalOrder.indexOf(b.category);
+    const aIdx = ai === -1 ? 999 : ai;
+    const bIdx = bi === -1 ? 999 : bi;
+    if (aIdx !== bIdx) return aIdx - bIdx;
+    return (b.confidence || 0) - (a.confidence || 0);
+  });
+
+  const standards = policies.filter(p => p.sensitivity !== 'critical').sort((a, b) => {
+    return (b.confidence || 0) - (a.confidence || 0);
+  });
+
+  const avgConf = policies.length > 0
+    ? (policies.reduce((s, p) => s + (p.confidence || 0), 0) / policies.length * 100).toFixed(0) + '%'
+    : '-';
+
+  document.getElementById('statTotal').textContent = policies.length;
+  document.getElementById('statCritical').textContent = criticals.length;
+  document.getElementById('statStandard').textContent = standards.length;
+  document.getElementById('statConfidence').textContent = avgConf;
+  document.getElementById('statTime').textContent = elapsed + 's';
+  document.getElementById('statsBar').classList.add('visible');
+
+  // Panel A: Raw Input
+  document.getElementById('rawDataPanel').innerHTML = `<div class="raw-data-value">${esc(policyText)}</div>`;
+
+  // Panel B top: User Preview
+  let cHtml = '';
+  if (criticals.length > 0) {
+    cHtml += '<div class="preview-critical-box">';
+    cHtml += '<div class="preview-critical-header">⚠️ Important: Read before booking</div>';
+    criticals.forEach(p => {
+      const cat = CATEGORY_CONFIG[p.category] || CATEGORY_CONFIG.others;
+      cHtml += `<div class="preview-critical-item"><span class="icon">${cat.emoji}</span><span>${esc(p.display_text)}</span></div>`;
+    });
+    cHtml += '</div>';
+  }
+
+  const standardsByCategory = {};
+  standards.forEach(p => {
+    const cat = p.category || 'others';
+    if (!standardsByCategory[cat]) standardsByCategory[cat] = [];
+    standardsByCategory[cat].push(p);
+  });
+
+  const categoryOrder = [
+    'guest_profile', 'checkin_checkout', 'id_documentation', 'child_policy', 'extra_bed',
+    'food_beverage', 'smoking_policy', 'pet_policy', 'security_deposit',
+    'payment_methods', 'cancellation_refund', 'outside_visitors', 'damage_policy',
+    'long_stay', 'party_event_policy', 'accessibility', 'safety_information',
+    'property_rules', 'others'
+  ];
+
+  const renderCategorySection = (catKey, items) => {
+    const catConfig = CATEGORY_CONFIG[catKey] || CATEGORY_CONFIG.others;
+    const sectionId = 'preview-section-' + catKey;
+    let html = `<div class="preview-standard-section">`;
+    html += `<div class="preview-category-header" onclick="togglePreviewSection('${sectionId}', this)">
+      <span>${catConfig.previewLabel}</span>
+      <span class="chevron">▼</span>
+    </div>`;
+    html += `<div class="preview-category-body" id="${sectionId}">`;
+    items.forEach(p => {
+      html += `<div class="preview-standard-item"><span>${esc(p.display_text)}</span></div>`;
+    });
+    html += '</div></div>';
+    return html;
+  };
+
+  categoryOrder.forEach(catKey => {
+    const items = standardsByCategory[catKey];
+    if (items && items.length > 0) cHtml += renderCategorySection(catKey, items);
+  });
+  Object.keys(standardsByCategory).forEach(catKey => {
+    if (categoryOrder.includes(catKey)) return;
+    const items = standardsByCategory[catKey];
+    if (items && items.length > 0) cHtml += renderCategorySection(catKey, items);
+  });
+
+  if (policies.length === 0) {
+    cHtml = '<div style="color:var(--text-secondary);font-size:14px;text-align:center;padding:40px 20px;">No policies extracted from this input.</div>';
+  }
+  document.getElementById('previewPanel').innerHTML = cHtml;
+
+  // Panel B bottom: Detailed cards
+  let bHtml = '';
+  if (criticals.length > 0) {
+    bHtml += '<div class="sensitivity-group">';
+    bHtml += '<div class="sensitivity-group-header critical">Critical (' + criticals.length + ')</div>';
+    criticals.forEach(p => { bHtml += renderPolicyCard(p, 'critical'); });
+    bHtml += '</div>';
+  }
+  if (standards.length > 0) {
+    bHtml += '<div class="sensitivity-group">';
+    bHtml += '<div class="sensitivity-group-header standard">Standard (' + standards.length + ')</div>';
+    standards.forEach(p => { bHtml += renderPolicyCard(p, 'standard'); });
+    bHtml += '</div>';
+  }
+  if (policies.length === 0) {
+    bHtml = '<div style="color:var(--text-secondary);font-size:14px;text-align:center;padding:40px 20px;">No policies extracted.</div>';
+  }
+  document.getElementById('extractedPanel').innerHTML = bHtml;
+  document.getElementById('outputSection').classList.add('visible');
+}
+
+function renderPolicyCard(p, sensitivity) {
+  const conf = Math.round((p.confidence || 0) * 100);
+  let confClass = 'high';
+  if (conf < 75) confClass = 'low';
+  else if (conf < 90) confClass = 'medium';
+  const catConfig = CATEGORY_CONFIG[p.category] || CATEGORY_CONFIG.others;
+  const badgeSens = sensitivity === 'critical' ? 'badge-critical' : 'badge-standard';
+  const cardClass = sensitivity === 'critical' ? 'critical-card' : 'standard-card';
+  return `
+    <div class="policy-card ${cardClass}">
+      <div class="policy-card-text">${esc(p.display_text)}</div>
+      <div class="policy-card-meta">
+        <span class="badge ${badgeSens}">${sensitivity.toUpperCase()}</span>
+        <span class="badge badge-category">${catConfig.emoji} ${catConfig.label}</span>
+        <div class="confidence-bar-container">
+          <div class="confidence-bar"><div class="confidence-bar-fill ${confClass}" style="width:${conf}%"></div></div>
+          <span class="confidence-label">${conf}%</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function togglePreviewSection(sectionId, headerEl) {
+  const body = document.getElementById(sectionId);
+  if (!body) return;
+  const expanded = body.classList.toggle('expanded');
+  headerEl.classList.toggle('expanded', expanded);
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function setLoading(loading) {
+  const btn = document.getElementById('btnProcess');
+  const text = document.getElementById('btnProcessText');
+  const spinner = document.getElementById('btnSpinner');
+  btn.disabled = loading;
+  text.textContent = loading ? 'Processing...' : 'Process Policy';
+  spinner.style.display = loading ? 'inline-block' : 'none';
+}
+
+function showError(msg) {
+  document.getElementById('errorMessage').textContent = msg;
+  document.getElementById('errorBox').classList.add('visible');
+}
+function hideError() { document.getElementById('errorBox').classList.remove('visible'); }
+function hideOutput() {
+  document.getElementById('outputSection').classList.remove('visible');
+  document.getElementById('statsBar').classList.remove('visible');
+}
+function clearAll() {
+  document.getElementById('policyText').value = '';
+  hideError();
+  hideOutput();
+}
+</script>
+</body>
+</html>
